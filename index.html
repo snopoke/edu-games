@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Edu Games</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
+  <link rel="stylesheet" href="shared/tokens.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 2rem 1rem;
+      background: var(--color-background-primary);
+      color: var(--color-text-primary);
+    }
+    .lp-wrap { max-width: 960px; margin: 0 auto; }
+    .lp-hero { text-align: center; padding: 2rem 1rem 2.5rem; }
+    .lp-hero h1 { font-size: 2.5rem; font-weight: 600; margin: 0; }
+    .lp-hero p { font-size: 1rem; color: var(--color-text-secondary); margin: 0.5rem 0 0; }
+
+    .lp-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    @media (min-width: 640px)  { .lp-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 960px)  { .lp-grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .lp-card {
+      display: block;
+      background: var(--color-background-primary);
+      border: 1px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-lg);
+      padding: 1.25rem;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .lp-card.playable:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      border-color: var(--lp-accent, var(--color-border-info));
+    }
+    .lp-card.coming-soon {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    .lp-card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--border-radius-md);
+      background: var(--lp-accent-bg, var(--color-background-info));
+      color: var(--lp-accent, var(--color-text-info));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+    .lp-card-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 4px; }
+    .lp-card-blurb { font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4; margin-bottom: 8px; }
+    .lp-card-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--color-background-secondary);
+      color: var(--color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .lp-error {
+      text-align: center;
+      color: var(--color-text-secondary);
+      padding: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="lp-wrap">
+    <header class="lp-hero">
+      <h1>Edu Games</h1>
+      <p>Pick a game to play</p>
+    </header>
+    <main id="lp-grid" class="lp-grid"></main>
+  </div>
+
+  <script>
+    // Accent palette mirrors the multiplication game's theme palette so card
+    // colors match the theme each game uses internally.
+    const ACCENTS = {
+      classic: { fg: '#378ADD', bg: '#E8F3FD' },
+      jungle:  { fg: '#1D9E75', bg: '#E5F4ED' },
+      space:   { fg: '#7F77DD', bg: '#EEEAFB' },
+      ocean:   { fg: '#0E7C9C', bg: '#DFF1F7' },
+    };
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    function renderCard(g) {
+      const accent = ACCENTS[g.accent] || ACCENTS.classic;
+      const styles = `--lp-accent:${accent.fg};--lp-accent-bg:${accent.bg};`;
+      const iconClass = escapeHtml(g.icon || 'ti-circle-dot');
+      const title  = escapeHtml(g.title);
+      const blurb  = escapeHtml(g.blurb || '');
+      const subjectTag = g.subject
+        ? `<span class="lp-card-tag">${escapeHtml(g.subject)}</span>`
+        : '';
+      const inner = `
+        <div class="lp-card-icon"><i class="ti ${iconClass}" aria-hidden="true"></i></div>
+        <div class="lp-card-title">${title}</div>
+        <div class="lp-card-blurb">${blurb}</div>
+        ${subjectTag}
+      `;
+      if (g.status === 'playable') {
+        const slug = encodeURIComponent(g.slug);
+        return `<a class="lp-card playable" style="${styles}" href="games/${slug}/">${inner}</a>`;
+      }
+      return `<div class="lp-card coming-soon" style="${styles}">${inner}</div>`;
+    }
+
+    async function load() {
+      const grid = document.getElementById('lp-grid');
+      try {
+        const res = await fetch('games.json');
+        if (!res.ok) throw new Error('manifest fetch failed: ' + res.status);
+        const { games } = await res.json();
+        grid.innerHTML = games.map(renderCard).join('');
+      } catch (err) {
+        console.error(err);
+        grid.innerHTML = '<p class="lp-error">Could not load games list.</p>';
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
