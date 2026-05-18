@@ -1,0 +1,31 @@
+{
+  "games": [
+    {
+      "slug": "multiplication-tables",
+      "title": "Multiplication Tables",
+      "blurb": "Beat the clock, build streaks, defeat bosses.",
+      "subject": "Math",
+      "icon": "ti-target",
+      "accent": "classic",
+      "status": "playable"
+    },
+    {
+      "slug": "word-wild",
+      "title": "Word Wild",
+      "blurb": "Word challenges coming soon.",
+      "subject": "English",
+      "icon": "ti-leaf",
+      "accent": "jungle",
+      "status": "coming-soon"
+    },
+    {
+      "slug": "number-quest",
+      "title": "Number Quest",
+      "blurb": "Number adventures coming soon.",
+      "subject": "Math",
+      "icon": "ti-planet",
+      "accent": "space",
+      "status": "coming-soon"
+    }
+  ]
+}
