@@ -1,0 +1,30 @@
+/* Design tokens for Edu Games.
+   These resolve every var(--color-*) and var(--border-radius-*) the
+   existing multiplication game's CSS references. Light theme only. */
+
+:root {
+  /* Text */
+  --color-text-primary:   #1f2937;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary:  #9ca3af;
+  --color-text-info:      #378ADD;
+  --color-text-success:   #1D9E75;
+  --color-text-warning:   #B5650D;
+  --color-text-danger:    #C2410C;
+
+  /* Backgrounds */
+  --color-background-primary:   #ffffff;
+  --color-background-secondary: #f3f4f6;
+  --color-background-info:      #E8F3FD;
+  --color-background-success:   #E5F4ED;
+  --color-background-warning:   #FAEEDA;
+
+  /* Borders */
+  --color-border-secondary: #d1d5db;
+  --color-border-tertiary:  #e5e7eb;
+  --color-border-info:      #A8CFEE;
+
+  /* Radii */
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+}
