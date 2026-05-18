@@ -123,7 +123,7 @@
         const slug = encodeURIComponent(g.slug);
         return `<a class="lp-card playable" style="${styles}" href="games/${slug}/">${inner}</a>`;
       }
-      return `<div class="lp-card coming-soon" style="${styles}">${inner}</div>`;
+      return `<div class="lp-card coming-soon" style="${styles}" aria-disabled="true">${inner}</div>`;
     }
 
     async function load() {
