@@ -151,6 +151,7 @@
     }
     .nq-button:hover { border-color: var(--nq-accent); }
     .nq-button.primary { background: var(--nq-accent); color: var(--nq-bg); border-color: var(--nq-accent); font-weight: 700; }
+    .nq-play-footer { display: flex; justify-content: flex-end; margin-top: 12px; }
   </style>
 </head>
 <body>
@@ -319,7 +320,11 @@
           </div>
         </div>
         <div class="nq-board" id="nq-board"></div>
+        <div class="nq-play-footer">
+          <button class="nq-button" id="nq-end-round">End round</button>
+        </div>
       `;
+      document.getElementById('nq-end-round').addEventListener('click', () => endRound('user'));
       renderHud();
     }
 
@@ -402,6 +407,11 @@
 
     function handleKey(e) {
       if (state.screen !== 'play') return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        endRound('user');
+        return;
+      }
       const dir = KEY_DIRS[e.key];
       if (!dir) return;
       e.preventDefault();
