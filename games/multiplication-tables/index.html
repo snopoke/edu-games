@@ -776,6 +776,8 @@
       else if (pct >= 60) { message = 'Good job!'; icon = 'ti-star'; }
       else { message = 'Keep practicing!'; icon = 'ti-target-arrow'; }
     }
+    // submitAnswer's finish() bumps bestByMode before calling renderResults,
+    // so equality here means "we just set it" — i.e. this is a new best.
     const isNewBest = isPlay
       ? state.bestByMode[state.mode] === state.points && state.points > 0
       : false;
