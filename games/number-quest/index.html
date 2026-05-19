@@ -379,9 +379,38 @@
     }
 
     function startTickLoop() {
-      // Implemented in the next task.
+      if (state.startedMoving) return;
       state.startedMoving = true;
-      console.log('would start tick loop');
+      const ms = TIERS[state.tier].tickMs;
+      state.tickId = setInterval(tick, ms);
+    }
+
+    function tick() {
+      if (state.queuedDir && !isOpposite(state.queuedDir, state.dir)) {
+        state.dir = state.queuedDir;
+      }
+      state.queuedDir = null;
+
+      const head = state.snake[0];
+      let nr = head.row;
+      let nc = head.col;
+      if (state.dir === 'up') nr--;
+      else if (state.dir === 'down') nr++;
+      else if (state.dir === 'left') nc--;
+      else if (state.dir === 'right') nc++;
+
+      // Wall handling — placeholder: just stop ticking if out of bounds.
+      // (Replaced with proper wrap/death logic in Task 14.)
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) {
+        clearInterval(state.tickId);
+        state.tickId = null;
+        return;
+      }
+
+      state.snake.unshift({ row: nr, col: nc });
+      state.snake.pop();
+      renderBoard();
+      renderHud();
     }
 
     window.addEventListener('keydown', handleKey);
