@@ -66,6 +66,42 @@
     .nq-tier h2 { margin: 0; font-size: 1.1rem; }
     .nq-tier-meta { color: var(--nq-text-soft); font-size: 0.85rem; }
     .nq-tier-best { font-size: 0.9rem; color: var(--nq-accent); }
+
+    .nq-hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .nq-question { font-size: 1.75rem; font-weight: 700; letter-spacing: 0.02em; }
+    .nq-stats { color: var(--nq-text-soft); font-size: 0.9rem; }
+    .nq-stats b { color: var(--nq-text); font-weight: 600; }
+
+    .nq-board {
+      --nq-cell-size: 32px;
+      display: grid;
+      grid-template-columns: repeat(20, var(--nq-cell-size));
+      grid-template-rows: repeat(15, var(--nq-cell-size));
+      gap: 1px;
+      padding: 4px;
+      background: var(--nq-cell-line);
+      border-radius: 10px;
+      width: max-content;
+      margin: 0 auto;
+      position: relative;
+    }
+    .nq-board::before {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      background:
+        repeating-linear-gradient(0deg, var(--nq-cell) 0 calc(var(--nq-cell-size)), var(--nq-cell-line) calc(var(--nq-cell-size)) calc(var(--nq-cell-size) + 1px)),
+        repeating-linear-gradient(90deg, var(--nq-cell) 0 calc(var(--nq-cell-size)), var(--nq-cell-line) calc(var(--nq-cell-size)) calc(var(--nq-cell-size) + 1px));
+      pointer-events: none;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
@@ -190,8 +226,43 @@
     }
 
     function startRound(tier) {
-      // Placeholder — implemented in a later task.
-      console.log('startRound', tier);
+      state.tier = tier;
+      state.snake = [];
+      state.dir = 'right';
+      state.queuedDir = null;
+      state.pellets = [];
+      state.question = null;
+      state.qCorrect = 0;
+      state.startedMoving = false;
+      if (state.tickId) { clearInterval(state.tickId); state.tickId = null; }
+      renderPlay();
+      showScreen('play');
+    }
+
+    function renderPlay() {
+      const root = document.getElementById('nq-play');
+      root.innerHTML = `
+        <div class="nq-hud">
+          <div class="nq-question" id="nq-question">&nbsp;</div>
+          <div class="nq-stats">
+            <span>Length <b id="nq-stat-length">3</b></span>
+            &middot;
+            <span>Q <b id="nq-stat-q">0</b>/10</span>
+            &middot;
+            <span>Best <b id="nq-stat-best">0</b></span>
+          </div>
+        </div>
+        <div class="nq-board" id="nq-board"></div>
+      `;
+      renderHud();
+    }
+
+    function renderHud() {
+      const q = state.question ? state.question.prompt : '';
+      document.getElementById('nq-question').textContent = q;
+      document.getElementById('nq-stat-length').textContent = state.snake.length || 0;
+      document.getElementById('nq-stat-q').textContent = state.qCorrect;
+      document.getElementById('nq-stat-best').textContent = state.bestByTier[state.tier] || 0;
     }
 
     const state = {
