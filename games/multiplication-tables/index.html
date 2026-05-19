@@ -63,11 +63,25 @@
 }
 .mt-confetti { position: absolute; width: 10px; height: 14px; pointer-events: none; animation: mt-confetti-rise 2.6s cubic-bezier(0.15, 0.8, 0.35, 1) forwards; border-radius: 2px; z-index: 10; }
 .mt-overlay { position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 10; }
-@keyframes mt-score-float { 0% { transform: translate(-50%, 0) scale(0.6); opacity: 0; } 20% { transform: translate(-50%, -10px) scale(1.1); opacity: 1; } 100% { transform: translate(-50%, -100px) scale(1); opacity: 0; } }
-.mt-score-pop { position: absolute; left: 50%; top: 45%; font-size: 32px; font-weight: 500; color: var(--color-text-success); animation: mt-score-float 1.4s cubic-bezier(0.2, 0.8, 0.4, 1) forwards; z-index: 11; pointer-events: none; }
-.mt-score-pop.mult-2 { font-size: 38px; color: #BA7517; }
-.mt-score-pop.mult-3 { font-size: 44px; color: #D85A30; }
-.mt-score-pop.mult-5 { font-size: 52px; color: #D4537E; }
+@keyframes mt-score-float {
+  0%   { transform: translate(-50%, 20px) scale(0.5); opacity: 0; }
+  18%  { transform: translate(-50%, 0)    scale(1.12); opacity: 1; }
+  32%  { transform: translate(-50%, -8px) scale(1);    opacity: 1; }
+  78%  { transform: translate(-50%, -80px) scale(1);   opacity: 1; }
+  100% { transform: translate(-50%, -120px) scale(0.95); opacity: 0; }
+}
+.mt-score-pop {
+  position: absolute; left: 50%; top: 32%;
+  font-size: 26px; font-weight: 600;
+  color: white; background: var(--color-text-success);
+  padding: 6px 18px; border-radius: 999px; white-space: nowrap;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.22), 0 2px 6px rgba(0,0,0,0.14);
+  animation: mt-score-float 1.7s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+  z-index: 20; pointer-events: none;
+}
+.mt-score-pop.mult-2 { font-size: 30px; background: #BA7517; }
+.mt-score-pop.mult-3 { font-size: 34px; background: #D85A30; }
+.mt-score-pop.mult-5 { font-size: 40px; background: #D4537E; }
 @keyframes mt-tick-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 .mt-tick .mt-problem { animation: mt-tick-pulse 0.5s ease-in-out infinite; color: var(--color-text-danger); }
 .mt-dot-grid { display: grid; gap: 4px; margin: 12px auto; justify-content: center; }
@@ -233,7 +247,8 @@
     lastEncourage: '',
   };
 
-  const HARD = [7, 8, 9, 11, 12];
+  const BOSS_HARD = [7, 8, 9, 12];
+  const BOSS_B_POOL = [6, 7, 8, 9, 12];
   const ACH = {
     'streak-3':      { name: 'Three in a row',   icon: 'ti-flame' },
     'streak-5':      { name: 'Five in a row',    icon: 'ti-flame' },
@@ -455,20 +470,35 @@
   }
 
   // ===== Game =====
+  function pickWeighted(values) {
+    // 10 is the easy times table, so heavily under-weight it.
+    const weights = values.map(v => v === 10 ? 0.25 : 1);
+    const total = weights.reduce((s, w) => s + w, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < values.length; i++) {
+      r -= weights[i];
+      if (r <= 0) return values[i];
+    }
+    return values[values.length - 1];
+  }
   function pickQuestion() {
     const tables = Array.from(state.tables);
     state.isBoss = state.currentQuestion >= 4 && (state.currentQuestion + 1) % 5 === 0;
     state.isInverted = !state.isBoss && Math.random() < 0.2;
-    let a;
+    let a, b;
     if (state.isBoss) {
-      const hard = tables.filter(t => HARD.includes(t));
-      a = (hard.length ? hard : tables)[Math.floor(Math.random() * (hard.length || tables.length))];
+      const hard = tables.filter(t => BOSS_HARD.includes(t));
+      const pool = hard.length ? hard : tables;
+      a = pool[Math.floor(Math.random() * pool.length)];
+      b = BOSS_B_POOL[Math.floor(Math.random() * BOSS_B_POOL.length)];
     } else {
-      a = tables[Math.floor(Math.random() * tables.length)];
+      a = pickWeighted(tables);
+      // Drop 1x: b ranges 2..12, with 10 down-weighted.
+      b = pickWeighted([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     }
     state.a = a;
-    state.b = 1 + Math.floor(Math.random() * 12);
-    state.correctAnswer = a * state.b;
+    state.b = b;
+    state.correctAnswer = a * b;
     if (state.isInverted) state.inversionTarget = Math.random() < 0.5 ? 'a' : 'b';
     else state.inversionTarget = null;
     state.answer = '';
