@@ -399,18 +399,29 @@
       else if (state.dir === 'left') nc--;
       else if (state.dir === 'right') nc++;
 
-      // Wall handling — placeholder: just stop ticking if out of bounds.
-      // (Replaced with proper wrap/death logic in Task 14.)
       if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) {
-        clearInterval(state.tickId);
-        state.tickId = null;
-        return;
+        if (TIERS[state.tier].wrap) {
+          if (nr < 0) nr = ROWS - 1;
+          else if (nr >= ROWS) nr = 0;
+          if (nc < 0) nc = COLS - 1;
+          else if (nc >= COLS) nc = 0;
+        } else {
+          endRound('wall');
+          return;
+        }
       }
 
       state.snake.unshift({ row: nr, col: nc });
       state.snake.pop();
       renderBoard();
       renderHud();
+    }
+
+    function endRound(reason) {
+      if (state.tickId) { clearInterval(state.tickId); state.tickId = null; }
+      // Placeholder — Results screen wiring lands in Task 18.
+      console.log('endRound', reason, 'length=' + state.snake.length, 'qCorrect=' + state.qCorrect);
+      showScreen('start');
     }
 
     window.addEventListener('keydown', handleKey);
