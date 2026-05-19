@@ -94,6 +94,16 @@
         const b = randInt(1, 10);
         return { prompt: `${a} × ${b} = ?`, answer: a * b };
       }
+      if (math === 'multdiv') {
+        if (Math.random() < 0.5) {
+          const a = randInt(1, 10);
+          const b = randInt(1, 10);
+          return { prompt: `${a} × ${b} = ?`, answer: a * b };
+        }
+        const b = randInt(1, 10);
+        const q = randInt(1, 10);
+        return { prompt: `${b * q} ÷ ${b} = ?`, answer: q };
+      }
       throw new Error(`unsupported math: ${math}`);
     }
 
@@ -195,6 +205,31 @@
         assert(a >= 1 && a <= 10 && b >= 1 && b <= 10, 'factor out of range: ' + q.prompt);
         assertEq(q.answer, a * b);
       }
+    });
+
+    test('hard questions: × or ÷ with integer results 1..100', () => {
+      let sawMul = false, sawDiv = false;
+      for (let i = 0; i < 2000; i++) {
+        const q = generateQuestion('hard');
+        const mul = q.prompt.match(/^([0-9]+) × ([0-9]+) = \?$/);
+        const div = q.prompt.match(/^([0-9]+) ÷ ([0-9]+) = \?$/);
+        assert(mul || div, 'unrecognised prompt: ' + q.prompt);
+        if (mul) {
+          sawMul = true;
+          const a = +mul[1], b = +mul[2];
+          assert(a >= 1 && a <= 10 && b >= 1 && b <= 10);
+          assertEq(q.answer, a * b);
+        } else {
+          sawDiv = true;
+          const p = +div[1], b = +div[2];
+          assert(b >= 1 && b <= 10);
+          assert(p % b === 0, 'non-integer divide: ' + q.prompt);
+          assertEq(q.answer, p / b);
+          assert(q.answer >= 1 && q.answer <= 10);
+        }
+      }
+      assert(sawMul, 'no × ever appeared');
+      assert(sawDiv, 'no ÷ ever appeared');
     });
 
     test('harness is alive', () => { assertEq(1 + 1, 2); });
