@@ -75,8 +75,15 @@
 .mt-label { font-size: 14px; font-weight: 500; margin-bottom: 8px; }
 .mt-chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .mt-review-tag { font-size: 14px; padding: 6px 12px; background: var(--color-background-primary); border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); }
-.mt-mode-tab { padding: 10px 16px; cursor: pointer; font-size: 14px; font-weight: 500; border-bottom: 2px solid transparent; color: var(--color-text-secondary); user-select: none; }
-.mt-mode-tab.on { color: var(--mt-accent, var(--color-text-info)); border-bottom-color: var(--mt-accent, var(--color-text-info)); }
+.mt-mode-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 540px) { .mt-mode-cards { grid-template-columns: 1fr; } }
+.mt-mode-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 12px; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); background: var(--color-background-primary); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; user-select: none; }
+.mt-mode-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); border-color: var(--mt-accent-border, var(--color-border-info)); }
+.mt-mode-card i { font-size: 32px; color: var(--mt-accent, var(--color-text-info)); }
+.mt-mode-card .mt-mode-name { font-size: 16px; font-weight: 500; }
+.mt-mode-card .mt-mode-desc { font-size: 12px; color: var(--color-text-secondary); text-align: center; }
+.mt-end-practice { padding: 10px 20px; font-size: 14px; background: transparent; color: var(--color-text-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); cursor: pointer; margin-left: 8px; }
+.mt-end-practice:hover { color: var(--color-text-primary); border-color: var(--color-text-primary); }
 .mt-sound-btn { background: transparent; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 6px 10px; cursor: pointer; font-size: 13px; color: var(--color-text-secondary); display: inline-flex; align-items: center; gap: 6px; }
 .mt-ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 8px; margin-top: 8px; }
 .mt-ach-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: var(--color-background-secondary); border-radius: var(--border-radius-md); font-size: 22px; color: var(--color-text-tertiary); position: relative; }
@@ -211,6 +218,26 @@
     'century':       { name: '100 answered',     icon: 'ti-trophy' },
     'speedy':        { name: 'Lightning fast',   icon: 'ti-bolt' },
   };
+
+  const MODES = {
+    practice: { name: 'Practice', icon: 'ti-school',       desc: 'No timer · play as long as you like', totalQuestions: Infinity },
+    play10:   { name: 'Play 10',  icon: 'ti-player-play',  desc: '10 questions · 10 s each',            totalQuestions: 10 },
+    play20:   { name: 'Play 20',  icon: 'ti-player-play',  desc: '20 questions · 10 s each',            totalQuestions: 20 },
+  };
+
+  function startMode(modeKey) {
+    if (!MODES[modeKey]) return;
+    state.mode = modeKey;
+    state.totalQuestions = MODES[modeKey].totalQuestions;
+    state.currentQuestion = 0;
+    state.score = 0;
+    state.points = 0;
+    state.wrong = [];
+    state.streak = 0;
+    state.bestStreak = 0;
+    audio();              // unlock AudioContext on user gesture
+    newQuestion();
+  }
 
   // ===== Theme =====
   function applyTheme(key) {
@@ -576,13 +603,14 @@
 
   function renderSettings() {
     state.screen = 'settings'; clearTimers();
-    const times = [5, 10, 15, 20, 30];
-    const tableNums = [2,3,4,5,6,7,8,9,10,11,12];
-    const counts = [10, 20, 50];
     const achList = Object.keys(ACH);
     const themeList = Object.keys(THEMES);
-    const bestClassicRows = Object.entries(state.bestClassic).map(([k,v]) => `Classic (${k}): <strong style="font-weight:500;">${v} pts</strong>`).join(' · ');
-    const hasBests = bestClassicRows || state.bestSurvival > 0;
+    const modeList = Object.keys(MODES);
+
+    const bestLines = [];
+    if (state.bestByMode.play10) bestLines.push(`Play 10: <strong style="font-weight:500;">${state.bestByMode.play10} pts</strong>`);
+    if (state.bestByMode.play20) bestLines.push(`Play 20: <strong style="font-weight:500;">${state.bestByMode.play20} pts</strong>`);
+    const hasBests = bestLines.length > 0;
 
     root.innerHTML = `
       <div style="max-width: 520px; margin: 0 auto;">
@@ -590,11 +618,17 @@
           <h1 style="margin: 0; font-size: 22px; font-weight: 500;"><i class="ti ${theme().icon}" aria-hidden="true" style="color: var(--mt-accent); vertical-align: -2px; margin-right: 6px;"></i>Times tables</h1>
           ${soundButton()}
         </div>
-        <p style="color: var(--color-text-secondary); margin: 0 0 1.5rem; font-size: 14px;">Beat the clock, build streaks, defeat bosses</p>
+        <p style="color: var(--color-text-secondary); margin: 0 0 1.5rem; font-size: 14px;">Pick a mode below to start</p>
 
-        <div style="display: flex; gap: 4px; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 1.5rem;">
-          <div class="mt-mode-tab ${state.mode === 'classic' ? 'on' : ''}" data-mode="classic"><i class="ti ti-target" aria-hidden="true" style="vertical-align:-2px;margin-right:4px;"></i>Classic</div>
-          <div class="mt-mode-tab ${state.mode === 'survival' ? 'on' : ''}" data-mode="survival"><i class="ti ti-shield" aria-hidden="true" style="vertical-align:-2px;margin-right:4px;"></i>Survival</div>
+        <div class="mt-section">
+          <div class="mt-mode-cards">${modeList.map(k => {
+            const m = MODES[k];
+            return `<div class="mt-mode-card" data-mode="${k}">
+              <i class="ti ${m.icon}" aria-hidden="true"></i>
+              <div class="mt-mode-name">${m.name}</div>
+              <div class="mt-mode-desc">${m.desc}</div>
+            </div>`;
+          }).join('')}</div>
         </div>
 
         <div class="mt-section">
@@ -609,28 +643,10 @@
           }).join('')}</div>
         </div>
 
-        <div class="mt-section">
-          <div class="mt-label">${state.mode === 'survival' ? 'Starting time per question' : 'Time per question'}</div>
-          <div class="mt-chips">${times.map(t => `<div class="mt-chip ${state.timePerQuestion === t ? 'on' : ''}" data-time="${t}">${t}s</div>`).join('')}</div>
-          ${state.mode === 'survival' ? '<div style="font-size: 12px; color: var(--color-text-tertiary); margin-top: 6px;">Shrinks 0.4s per question. One wrong answer ends the run.</div>' : ''}
-        </div>
-
-        <div class="mt-section">
-          <div class="mt-label">Tables to practice <span style="color: var(--color-text-tertiary); font-weight: 400;">(tap to toggle)</span></div>
-          <div class="mt-chips">${tableNums.map(n => `<div class="mt-chip mt-table-chip ${state.tables.has(n) ? 'on' : ''}" data-table="${n}">×${n}</div>`).join('')}</div>
-        </div>
-
-        ${state.mode === 'classic' ? `
-        <div class="mt-section">
-          <div class="mt-label">Questions per round</div>
-          <div class="mt-chips">${counts.map(n => `<div class="mt-chip ${state.totalQuestions === n ? 'on' : ''}" data-count="${n}">${n}</div>`).join('')}</div>
-        </div>` : ''}
-
         ${hasBests ? `
         <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 14px; margin-bottom: 1.5rem; font-size: 13px; color: var(--color-text-secondary);">
           <div style="font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;"><i class="ti ti-trophy" aria-hidden="true" style="vertical-align:-2px;margin-right:4px;"></i>Best scores</div>
-          ${bestClassicRows ? `<div>${bestClassicRows}</div>` : ''}
-          ${state.bestSurvival > 0 ? `<div>Survival: <strong style="font-weight:500;">${state.bestSurvival} questions</strong></div>` : ''}
+          <div>${bestLines.join(' · ')}</div>
         </div>` : ''}
 
         <div class="mt-section">
@@ -643,28 +659,11 @@
             }).join('')}
           </div>
         </div>
-
-        <div style="text-align: center; margin-top: 2rem;">
-          <button class="mt-primary" id="mt-start"><i class="ti ti-player-play" aria-hidden="true" style="vertical-align: -2px; margin-right: 6px;"></i>Start ${state.mode === 'survival' ? 'survival' : 'round'}</button>
-        </div>
       </div>
     `;
     attachSoundBtn();
-    root.querySelectorAll('[data-mode]').forEach(el => el.addEventListener('click', () => { state.mode = el.dataset.mode; renderSettings(); }));
     root.querySelectorAll('[data-theme]').forEach(el => el.addEventListener('click', () => { applyTheme(el.dataset.theme); savePrefs(); renderSettings(); }));
-    root.querySelectorAll('[data-time]').forEach(el => el.addEventListener('click', () => { state.timePerQuestion = parseInt(el.dataset.time, 10); renderSettings(); }));
-    root.querySelectorAll('[data-table]').forEach(el => el.addEventListener('click', () => {
-      const n = parseInt(el.dataset.table, 10);
-      if (state.tables.has(n)) state.tables.delete(n); else state.tables.add(n);
-      renderSettings();
-    }));
-    root.querySelectorAll('[data-count]').forEach(el => el.addEventListener('click', () => { state.totalQuestions = parseInt(el.dataset.count, 10); renderSettings(); }));
-    root.querySelector('#mt-start').addEventListener('click', () => {
-      if (state.tables.size === 0) return;
-      state.currentQuestion = 0; state.score = 0; state.points = 0; state.wrong = []; state.streak = 0; state.bestStreak = 0;
-      audio();
-      newQuestion();
-    });
+    root.querySelectorAll('[data-mode]').forEach(el => el.addEventListener('click', () => startMode(el.dataset.mode)));
   }
 
   function statusBar() {
@@ -672,9 +671,12 @@
     const streakHtml = state.streak > 1
       ? `<span style="color: var(--color-text-warning); margin-left: 8px;"><i class="ti ti-flame" aria-hidden="true" style="vertical-align: -2px;"></i> ${state.streak}${mult > 1 ? ` <span class="mt-mult-badge">×${mult}</span>` : ''}</span>`
       : '';
-    const q = state.mode === 'survival'
-      ? `Q${state.currentQuestion + 1} <span style="color: var(--color-text-tertiary);">· survival</span>`
-      : `Question ${Math.min(state.currentQuestion + 1, state.totalQuestions)} of ${state.totalQuestions}`;
+    let q;
+    if (state.mode === 'practice') {
+      q = `Practice <span style="color: var(--color-text-tertiary);">· Q${state.currentQuestion + 1}</span>`;
+    } else {
+      q = `Question ${Math.min(state.currentQuestion + 1, state.totalQuestions)} of ${state.totalQuestions}`;
+    }
     return `<div class="mt-row">
       <span>${q}</span>
       <span style="display: inline-flex; align-items: center; gap: 4px;">${state.points} pts${streakHtml}</span>
@@ -691,20 +693,25 @@
 
   function renderPlaying() {
     state.screen = 'playing';
+    const isPractice = state.mode === 'practice';
+    const timerBar = isPractice ? '' : '<div class="mt-timer-bar"><div class="mt-timer-fill"></div></div>';
+    const endBtn = isPractice ? '<button class="mt-end-practice" id="mt-endpractice">End practice</button>' : '';
+    const hint = state.isInverted ? 'Find the missing factor' : 'Press Enter to submit';
     root.innerHTML = `
       <div class="mt-play">
         <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 4px;">
           ${soundButton()}
         </div>
         ${statusBar()}
-        <div class="mt-timer-bar"><div class="mt-timer-fill"></div></div>
+        ${timerBar}
         <div style="text-align: center; padding: 0.5rem 0;">
           <div class="mt-problem mt-pop">${problemHtml()}</div>
           <input id="mt-answer" class="mt-input" type="number" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="${state.answer}" />
           <div style="margin-top: 1.25rem;">
             <button class="mt-primary" id="mt-submit">Submit</button>
+            ${endBtn}
           </div>
-          <div style="margin-top: 0.75rem; font-size: 12px; color: var(--color-text-tertiary);">${state.isInverted ? 'Find the missing factor' : 'Press Enter to submit'}</div>
+          <div style="margin-top: 0.75rem; font-size: 12px; color: var(--color-text-tertiary);">${hint}</div>
         </div>
       </div>
     `;
@@ -713,6 +720,9 @@
     input.addEventListener('input', e => { state.answer = e.target.value; });
     input.addEventListener('keydown', e => { if (e.key === 'Enter' && state.answer.length > 0) submitAnswer(false); });
     root.querySelector('#mt-submit').addEventListener('click', () => { if (state.answer.length > 0) submitAnswer(false); });
+    if (isPractice) {
+      root.querySelector('#mt-endpractice').addEventListener('click', endPractice);
+    }
   }
 
   function dotGrid(rows, cols) {
@@ -752,24 +762,23 @@
 
   function renderResults() {
     clearTimers();
-    const isClassic = state.mode === 'classic';
-    const total = isClassic ? state.totalQuestions : state.currentQuestion;
+    const isPractice = state.mode === 'practice';
+    const isPlay = state.mode === 'play10' || state.mode === 'play20';
+    const total = isPractice ? state.currentQuestion : state.totalQuestions;
     const pct = total > 0 ? Math.round((state.score / total) * 100) : 0;
     let message, icon;
-    if (isClassic) {
+    if (isPractice) {
+      message = `Practice session · ${state.currentQuestion} ${state.currentQuestion === 1 ? 'question' : 'questions'}`;
+      icon = 'ti-school';
+    } else {
       if (pct === 100) { message = 'Perfect round!'; icon = 'ti-trophy'; }
       else if (pct >= 80) { message = 'Excellent work!'; icon = 'ti-medal'; }
       else if (pct >= 60) { message = 'Good job!'; icon = 'ti-star'; }
       else { message = 'Keep practicing!'; icon = 'ti-target-arrow'; }
-    } else {
-      const qsOk = state.currentQuestion - 1;
-      if (qsOk >= 20) { message = `Survival pro · ${qsOk} questions!`; icon = 'ti-shield-check'; }
-      else if (qsOk >= 10) { message = `Survivor · ${qsOk} questions`; icon = 'ti-shield'; }
-      else { message = `Survived ${qsOk} questions`; icon = 'ti-target-arrow'; }
     }
-    const isNewBest = isClassic
-      ? state.bestClassic[String(state.totalQuestions)] === state.points && state.points > 0
-      : (state.currentQuestion - 1) === state.bestSurvival && state.bestSurvival > 0;
+    const isNewBest = isPlay
+      ? state.bestByMode[state.mode] === state.points && state.points > 0
+      : false;
 
     root.innerHTML = `
       <div style="text-align: center; max-width: 520px; margin: 0 auto;">
@@ -783,7 +792,7 @@
           </div>
           <div>
             <div style="font-size: 13px; color: var(--color-text-secondary);">Correct</div>
-            <div style="font-size: 36px; font-weight: 500;">${state.score}${isClassic ? `<span style="color: var(--color-text-tertiary); font-size: 24px;">/${total}</span>` : ''}</div>
+            <div style="font-size: 36px; font-weight: 500;">${state.score}${isPlay ? `<span style="color: var(--color-text-tertiary); font-size: 24px;">/${total}</span>` : ''}</div>
           </div>
           <div>
             <div style="font-size: 13px; color: var(--color-text-secondary);">Best streak</div>
@@ -796,7 +805,7 @@
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
               ${state.wrong.map(w => `<div class="mt-review-tag">${w.a} × ${w.b} = <strong style="font-weight: 500;">${w.answer}</strong></div>`).join('')}
             </div>
-          </div>` : (isClassic ? `
+          </div>` : (isPlay ? `
           <div style="background: var(--color-background-success); border-radius: var(--border-radius-lg); padding: 12px; margin: 1rem 0 1.5rem; color: var(--color-text-success); font-size: 14px;">
             <i class="ti ti-confetti" aria-hidden="true" style="vertical-align: -2px; margin-right: 6px;"></i>Flawless round — no mistakes!
           </div>` : '')}
@@ -806,10 +815,7 @@
         </div>
       </div>
     `;
-    root.querySelector('#mt-again').addEventListener('click', () => {
-      state.currentQuestion = 0; state.score = 0; state.points = 0; state.wrong = []; state.streak = 0; state.bestStreak = 0;
-      newQuestion();
-    });
+    root.querySelector('#mt-again').addEventListener('click', () => startMode(state.mode));
     root.querySelector('#mt-resettings').addEventListener('click', renderSettings);
   }
 
