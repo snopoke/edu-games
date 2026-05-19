@@ -352,6 +352,40 @@
       renderHud();
     }
 
+    const KEY_DIRS = {
+      ArrowUp: 'up', w: 'up', W: 'up',
+      ArrowDown: 'down', s: 'down', S: 'down',
+      ArrowLeft: 'left', a: 'left', A: 'left',
+      ArrowRight: 'right', d: 'right', D: 'right',
+    };
+
+    function isOpposite(a, b) {
+      return (a === 'up' && b === 'down') ||
+             (a === 'down' && b === 'up') ||
+             (a === 'left' && b === 'right') ||
+             (a === 'right' && b === 'left');
+    }
+
+    function handleKey(e) {
+      if (state.screen !== 'play') return;
+      const dir = KEY_DIRS[e.key];
+      if (!dir) return;
+      e.preventDefault();
+      if (isOpposite(dir, state.dir)) return;
+      state.queuedDir = dir;
+      if (!state.startedMoving) {
+        startTickLoop();
+      }
+    }
+
+    function startTickLoop() {
+      // Implemented in the next task.
+      state.startedMoving = true;
+      console.log('would start tick loop');
+    }
+
+    window.addEventListener('keydown', handleKey);
+
     const state = {
       screen: 'start',
       tier: null,
