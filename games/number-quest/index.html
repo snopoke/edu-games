@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Number Quest — Edu Games</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
+  <link rel="stylesheet" href="../../shared/tokens.css">
+  <script src="../../shared/storage.js"></script>
+  <style>
+    :root {
+      --nq-bg: #1a1140;
+      --nq-bg-soft: #251a55;
+      --nq-accent: #b9a8ff;
+      --nq-cell: #2a1f63;
+      --nq-cell-line: rgba(255,255,255,0.05);
+      --nq-snake: #7df0a9;
+      --nq-snake-head: #c8ffd8;
+      --nq-pellet: #ffcc55;
+      --nq-pellet-text: #2b1900;
+      --nq-text: #f3eeff;
+      --nq-text-soft: rgba(243,238,255,0.7);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 2rem 1rem;
+      background: var(--nq-bg);
+      color: var(--nq-text);
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .game-container { max-width: 720px; margin: 0 auto; position: relative; }
+    .nq-back {
+      color: var(--nq-text-soft);
+      text-decoration: none;
+      font-size: 14px;
+      display: inline-block;
+      margin-bottom: 1rem;
+    }
+    .nq-back:hover { color: var(--nq-text); }
+    .nq-screen[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <a class="nq-back" href="../../">← Games</a>
+  <div class="game-container">
+    <section id="nq-start" class="nq-screen"></section>
+    <section id="nq-play" class="nq-screen" hidden></section>
+    <section id="nq-results" class="nq-screen" hidden></section>
+  </div>
+  <script>
+    'use strict';
+
+    const state = {
+      screen: 'start',
+      tier: null,
+      snake: [],
+      dir: 'right',
+      queuedDir: null,
+      pellets: [],
+      question: null,
+      qCorrect: 0,
+      tickId: null,
+      startedMoving: false,
+      bestByTier: { easy: 0, medium: 0, hard: 0 },
+    };
+
+    function showScreen(name) {
+      state.screen = name;
+      for (const id of ['nq-start', 'nq-play', 'nq-results']) {
+        document.getElementById(id).hidden = (id !== `nq-${name}`);
+      }
+    }
+
+    function init() {
+      showScreen('start');
+    }
+
+    if (new URLSearchParams(location.search).get('test') !== '1') {
+      init();
+    }
+  </script>
+</body>
+</html>
