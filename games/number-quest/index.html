@@ -443,7 +443,11 @@
           }
           nextQuestion();
         } else {
-          // Wrong eat handled in Task 17.
+          // Wrong eat: shrink the snake (floor 1), question stays.
+          // We already unshifted the new head; pop the tail twice to net -1,
+          // but skip the second pop if doing so would drop below length 1.
+          state.snake.pop();
+          if (state.snake.length > 1) state.snake.pop();
         }
         renderBoard();
         renderHud();
