@@ -421,10 +421,17 @@
     state.tickPlayed = false;
   }
   function beginQuestion() {
-    state.baseTime = getQuestionTime();
-    state.timeLeft = state.baseTime;
-    renderPlaying();
-    startTimer();
+    state.questionStartedAt = performance.now();
+    if (state.mode === 'practice') {
+      state.baseTime = 0;
+      state.timeLeft = 0;
+      renderPlaying();
+    } else {
+      state.baseTime = 10;
+      state.timeLeft = 10;
+      renderPlaying();
+      startTimer();
+    }
     setTimeout(() => { const i = root.querySelector('#mt-answer'); if (i) i.focus(); }, 30);
   }
   function newQuestion() {
@@ -463,9 +470,15 @@
     if (stage) stage.classList.toggle('mt-tick', lowAbs);
   }
 
+  function endPractice() {
+    clearTimers();
+    state.screen = 'results';
+    renderResults();
+  }
+
   function submitAnswer(timeout) {
     clearTimers();
-    const answerTime = state.baseTime - state.timeLeft;
+    const answerTime = (performance.now() - state.questionStartedAt) / 1000;
     const userAns = parseInt(state.answer, 10);
     let expected;
     if (state.isInverted) expected = state.inversionTarget === 'a' ? state.a : state.b;
@@ -505,9 +518,9 @@
       'streak-3':      () => state.streak >= 3,
       'streak-5':      () => state.streak >= 5,
       'streak-10':     () => state.streak >= 10,
+      'streak-15':     () => state.streak >= 15,
       'boss-defeated': () => state.lastBossWin,
-      'survival-10':   () => state.mode === 'survival' && state.currentQuestion >= 10 && isCorrect,
-      'survival-20':   () => state.mode === 'survival' && state.currentQuestion >= 20 && isCorrect,
+      'marathon':      () => state.mode === 'practice' && state.currentQuestion >= 50,
       'century':       () => state.totalAnswered >= 100,
       'speedy':        () => isCorrect && answerTime < 2,
     };
@@ -517,11 +530,13 @@
         newlyUnlocked.push(id);
       }
     }
-    let endGame = false;
-    if (state.mode === 'survival' && !isCorrect) endGame = true;
-    if (state.mode === 'classic' && state.currentQuestion >= state.totalQuestions) endGame = true;
 
-    if (endGame && state.mode === 'classic' && state.wrong.length === 0 && !state.achievements.has('perfect')) {
+    let endGame = false;
+    if ((state.mode === 'play10' || state.mode === 'play20') && state.currentQuestion >= state.totalQuestions) {
+      endGame = true;
+    }
+
+    if (endGame && state.wrong.length === 0 && !state.achievements.has('perfect')) {
       state.achievements.add('perfect');
       newlyUnlocked.push('perfect');
     }
@@ -531,14 +546,8 @@
     state.advanceId = setTimeout(() => {
       const finish = () => {
         if (endGame) {
-          if (state.mode === 'classic') {
-            const key = String(state.totalQuestions);
-            if (!state.bestClassic[key] || state.points > state.bestClassic[key]) state.bestClassic[key] = state.points;
-          } else {
-            const qsOk = state.currentQuestion - 1;
-            if (qsOk > state.bestSurvival) state.bestSurvival = qsOk;
-          }
-          if (state.soundOn && state.mode === 'survival') sfx.gameover();
+          const key = state.mode; // 'play10' or 'play20'
+          if (state.points > (state.bestByMode[key] || 0)) state.bestByMode[key] = state.points;
           saveStats();
           state.screen = 'results';
           renderResults();
