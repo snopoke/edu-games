@@ -21,11 +21,11 @@
     {
       "slug": "number-quest",
       "title": "Number Quest",
-      "blurb": "Number adventures coming soon.",
+      "blurb": "Steer the snake. Eat the right answer. Grow.",
       "subject": "Math",
       "icon": "ti-planet",
       "accent": "space",
-      "status": "coming-soon"
+      "status": "playable"
     }
   ]
 }
