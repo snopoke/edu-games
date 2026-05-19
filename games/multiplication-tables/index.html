@@ -12,8 +12,10 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
       margin: 0;
       padding: 2rem 1rem;
-      background: var(--color-background-primary);
+      background: var(--mt-bg, var(--color-background-primary));
       color: var(--color-text-primary);
+      min-height: 100vh;
+      box-sizing: border-box;
     }
     .game-container { max-width: 720px; margin: 0 auto; }
     .sr-only {
@@ -29,7 +31,6 @@
 .mt-decor { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .mt-decor i { position: absolute; opacity: 0.10; color: var(--mt-accent, var(--color-text-info)); }
 .mt-stage { position: relative; min-height: 480px; padding: 1rem 0; overflow: visible; z-index: 1; }
-.mt-stage::before { content: ''; position: absolute; inset: -1rem; z-index: -1; background: var(--mt-bg, transparent); border-radius: var(--border-radius-lg); pointer-events: none; }
 .mt-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--color-text-secondary); margin-bottom: 8px; gap: 12px; flex-wrap: wrap; }
 .mt-timer-bar { width: 100%; height: 6px; background: var(--color-background-secondary); border-radius: 3px; overflow: hidden; margin-bottom: 2rem; }
 .mt-timer-fill { height: 100%; background: var(--mt-accent, var(--color-text-info)); width: 100%; transition: background 0.2s; }
@@ -250,7 +251,7 @@
     wrap.style.setProperty('--mt-accent-border', t.accentBorder);
     wrap.style.setProperty('--mt-boss-bg', t.bossBg);
     wrap.style.setProperty('--mt-boss-fg', t.bossFg);
-    wrap.style.setProperty('--mt-bg', t.stageBg || 'transparent');
+    document.documentElement.style.setProperty('--mt-bg', t.stageBg || 'transparent');
     decorLayer.innerHTML = t.decor.map(d => {
       const pos = ['top','right','bottom','left'].filter(k => d[k] != null).map(k => `${k}:${d[k]}`).join(';');
       return `<i class="ti ${d.icon}${d.float ? ' mt-float' : ''}" aria-hidden="true" style="${pos};font-size:${d.size}px;--rot:${d.rot}deg;transform:rotate(${d.rot}deg);"></i>`;
