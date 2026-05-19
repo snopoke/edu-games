@@ -107,6 +107,22 @@
       throw new Error(`unsupported math: ${math}`);
     }
 
+    function generateDistractors(answer, count) {
+      const pool = new Set();
+      for (const delta of [-1, 1, -2, 2, -10, 10, -5, 5]) {
+        const v = answer + delta;
+        if (v >= 0 && v !== answer) pool.add(v);
+      }
+      let guard = 0;
+      while (pool.size < count && guard < 100) {
+        const delta = randInt(-7, 7);
+        const v = answer + delta;
+        if (v >= 0 && v !== answer) pool.add(v);
+        guard++;
+      }
+      return shuffle([...pool]).slice(0, count);
+    }
+
     const state = {
       screen: 'start',
       tier: null,
@@ -230,6 +246,23 @@
       }
       assert(sawMul, 'no × ever appeared');
       assert(sawDiv, 'no ÷ ever appeared');
+    });
+
+    test('distractors: count matches request, no answer, no duplicates, non-negative', () => {
+      for (const tier of ['easy', 'medium', 'hard']) {
+        const count = TIERS[tier].distractors;
+        for (let i = 0; i < 1000; i++) {
+          const q = generateQuestion(tier);
+          const ds = generateDistractors(q.answer, count);
+          assertEq(ds.length, count, `${tier} distractor count`);
+          assertEq(new Set(ds).size, count, `${tier} has duplicates: ${ds}`);
+          for (const d of ds) {
+            assert(Number.isInteger(d), `${tier} non-integer distractor: ${d}`);
+            assert(d >= 0, `${tier} negative distractor: ${d}`);
+            assert(d !== q.answer, `${tier} distractor equals answer: ${d}`);
+          }
+        }
+      }
     });
 
     test('harness is alive', () => { assertEq(1 + 1, 2); });
