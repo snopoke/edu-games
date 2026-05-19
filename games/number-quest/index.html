@@ -81,7 +81,40 @@
       showScreen('start');
     }
 
-    if (new URLSearchParams(location.search).get('test') !== '1') {
+    const tests = [];
+    function test(name, fn) { tests.push({ name, fn }); }
+
+    function runTests() {
+      const root = document.createElement('div');
+      root.style.cssText = 'background:#000;color:#fff;padding:1rem;font-family:ui-monospace,monospace;white-space:pre-wrap;font-size:13px;';
+      document.body.prepend(root);
+      let passed = 0, failed = 0;
+      const lines = [];
+      for (const t of tests) {
+        try {
+          t.fn();
+          lines.push(`✓ ${t.name}`);
+          passed++;
+        } catch (e) {
+          lines.push(`✗ ${t.name}\n    ${e && e.message ? e.message : e}`);
+          failed++;
+        }
+      }
+      const summary = `${passed}/${passed + failed} passed${failed ? ` — ${failed} FAILED` : ''}`;
+      root.textContent = summary + '\n\n' + lines.join('\n');
+      console.log(summary);
+    }
+
+    function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed'); }
+    function assertEq(a, b, msg) {
+      if (a !== b) throw new Error((msg || 'assertEq') + ` — expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
+    }
+
+    test('harness is alive', () => { assertEq(1 + 1, 2); });
+
+    if (new URLSearchParams(location.search).get('test') === '1') {
+      runTests();
+    } else {
       init();
     }
   </script>
