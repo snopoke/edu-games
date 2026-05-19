@@ -132,8 +132,13 @@
     .nq-snake-seg {
       background: var(--nq-snake);
       box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);
+      transition: background 0.4s ease;
     }
-    .nq-snake-seg.head { background: var(--nq-snake-head); }
+    .nq-snake-seg.head { background: var(--nq-snake-head); transition: background 0.4s ease; }
+    .nq-board.flashed-correct .nq-snake-seg { background: var(--nq-accent); }
+    .nq-board.flashed-correct .nq-snake-seg.head { background: #ffffff; }
+    .nq-board.flashed-wrong .nq-snake-seg { background: #d65a5a; }
+    .nq-board.flashed-wrong .nq-snake-seg.head { background: #ffa3a3; }
     .nq-pellet {
       background: var(--nq-pellet);
       color: var(--nq-pellet-text);
@@ -443,6 +448,39 @@
       setTimeout(() => el.remove(), 400);
     }
 
+    let audioCtx = null;
+    function playSound(kind) {
+      try {
+        if (!audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (!Ctx) return;
+          audioCtx = new Ctx();
+        }
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        if (kind === 'correct') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(660, now);
+          osc.frequency.exponentialRampToValueAtTime(990, now + 0.12);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.22);
+        } else {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.18);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          osc.start(now);
+          osc.stop(now + 0.24);
+        }
+      } catch (_e) { /* audio unsupported — silent fallback */ }
+    }
+
     function isOccupied(row, col, extras = []) {
       if (state.snake.some(s => s.row === row && s.col === col)) return true;
       if (state.pellets.some(p => p.row === row && p.col === col)) return true;
@@ -572,12 +610,21 @@
       const pelletIdx = state.pellets.findIndex(p => p.row === nr && p.col === nc);
       if (pelletIdx >= 0) {
         const pellet = state.pellets[pelletIdx];
-        spawnFlash(pellet.row, pellet.col, pellet.correct ? 'correct' : 'wrong');
-        if (!pellet.correct) {
-          const board = document.getElementById('nq-board');
-          if (board) {
+        const kind = pellet.correct ? 'correct' : 'wrong';
+        spawnFlash(pellet.row, pellet.col, kind);
+        playSound(kind);
+        const board = document.getElementById('nq-board');
+        if (board) {
+          // Snake colour flash: apply a class, remove it shortly so the
+          // CSS transition fades the snake back to its normal colour.
+          const flashClass = kind === 'correct' ? 'flashed-correct' : 'flashed-wrong';
+          board.classList.remove('flashed-correct', 'flashed-wrong');
+          // Force reflow so the new class is registered after any prior removal.
+          void board.offsetWidth;
+          board.classList.add(flashClass);
+          setTimeout(() => board.classList.remove(flashClass), 120);
+          if (!pellet.correct) {
             board.classList.remove('shake');
-            // Force reflow so the animation can restart on consecutive wrongs.
             void board.offsetWidth;
             board.classList.add('shake');
           }
