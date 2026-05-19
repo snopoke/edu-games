@@ -102,6 +102,18 @@
       pointer-events: none;
       border-radius: 6px;
     }
+    .nq-snake-seg, .nq-pellet {
+      grid-column: var(--col);
+      grid-row: var(--row);
+      border-radius: 5px;
+      z-index: 1;
+      position: relative;
+    }
+    .nq-snake-seg {
+      background: var(--nq-snake);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);
+    }
+    .nq-snake-seg.head { background: var(--nq-snake-head); }
   </style>
 </head>
 <body>
@@ -235,7 +247,15 @@
       state.qCorrect = 0;
       state.startedMoving = false;
       if (state.tickId) { clearInterval(state.tickId); state.tickId = null; }
+      const midRow = Math.floor(ROWS / 2);
+      const midCol = Math.floor(COLS / 2);
+      state.snake = [
+        { row: midRow, col: midCol },
+        { row: midRow, col: midCol - 1 },
+        { row: midRow, col: midCol - 2 },
+      ];
       renderPlay();
+      renderBoard();
       showScreen('play');
     }
 
@@ -263,6 +283,19 @@
       document.getElementById('nq-stat-length').textContent = state.snake.length || 0;
       document.getElementById('nq-stat-q').textContent = state.qCorrect;
       document.getElementById('nq-stat-best').textContent = state.bestByTier[state.tier] || 0;
+    }
+
+    function renderBoard() {
+      const board = document.getElementById('nq-board');
+      if (!board) return;
+      let html = '';
+      state.snake.forEach((seg, i) => {
+        html += `<div class="nq-snake-seg${i === 0 ? ' head' : ''}" style="--col:${seg.col + 1};--row:${seg.row + 1}"></div>`;
+      });
+      state.pellets.forEach(p => {
+        html += `<div class="nq-pellet" style="--col:${p.col + 1};--row:${p.row + 1}">${p.value}</div>`;
+      });
+      board.innerHTML = html;
     }
 
     const state = {
