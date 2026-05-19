@@ -66,6 +66,26 @@
     .nq-tier h2 { margin: 0; font-size: 1.1rem; }
     .nq-tier-meta { color: var(--nq-text-soft); font-size: 0.85rem; }
     .nq-tier-best { font-size: 0.9rem; color: var(--nq-accent); }
+    .nq-howto {
+      max-width: 480px;
+      margin: 1.5rem auto 0;
+      padding: 1rem 1.25rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      color: var(--nq-text-soft);
+      font-size: 0.9rem;
+    }
+    .nq-howto-title {
+      color: var(--nq-text);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.5rem;
+    }
+    .nq-howto ul { margin: 0; padding-left: 1.1rem; line-height: 1.5; }
+    .nq-howto b { color: var(--nq-text); }
 
     .nq-hud {
       display: flex;
@@ -330,6 +350,15 @@
             </button>
           `).join('')}
         </div>
+        <div class="nq-howto">
+          <div class="nq-howto-title">How to play</div>
+          <ul>
+            <li>Steer with <b>arrow keys</b> or <b>WASD</b></li>
+            <li>Eat the pellet that matches the answer to grow</li>
+            <li>Wrong pellets shrink the snake — try again, same question stays</li>
+            <li>10 correct answers ends the round; score = snake length</li>
+          </ul>
+        </div>
       `;
       for (const btn of root.querySelectorAll('.nq-tier')) {
         btn.addEventListener('click', () => startRound(btn.dataset.tier));
@@ -457,10 +486,13 @@
     }
 
     const KEY_DIRS = {
+      // e.key values (depend on keyboard layout)
       ArrowUp: 'up', w: 'up', W: 'up',
       ArrowDown: 'down', s: 'down', S: 'down',
       ArrowLeft: 'left', a: 'left', A: 'left',
       ArrowRight: 'right', d: 'right', D: 'right',
+      // e.code values (physical keys, layout-independent — fallback when e.key is remapped)
+      KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right',
     };
 
     function isOpposite(a, b) {
@@ -477,7 +509,7 @@
         endRound('user');
         return;
       }
-      const dir = KEY_DIRS[e.key];
+      const dir = KEY_DIRS[e.key] || KEY_DIRS[e.code];
       if (!dir) return;
       e.preventDefault();
       if (isOpposite(dir, state.dir)) return;
