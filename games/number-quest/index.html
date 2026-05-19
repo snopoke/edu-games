@@ -32,18 +32,22 @@
     }
     .game-container { max-width: 720px; margin: 0 auto; position: relative; }
     .nq-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
       color: var(--nq-text-soft);
       text-decoration: none;
-      font-size: 14px;
-      display: inline-block;
-      margin-bottom: 1rem;
+      font-size: 13px;
+      padding: 4px 8px;
+      margin-bottom: 12px;
+      border-radius: var(--border-radius-md);
     }
-    .nq-back:hover { color: var(--nq-text); }
+    .nq-back:hover { color: var(--nq-text); background: rgba(255,255,255,0.06); }
     .nq-screen[hidden] { display: none; }
   </style>
 </head>
 <body>
-  <a class="nq-back" href="../../">← Games</a>
+  <a class="nq-back" href="../../"><i class="ti ti-chevron-left" aria-hidden="true"></i>Games</a>
   <div class="game-container">
     <section id="nq-start" class="nq-screen"></section>
     <section id="nq-play" class="nq-screen" hidden></section>
