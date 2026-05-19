@@ -152,6 +152,29 @@
     .nq-button:hover { border-color: var(--nq-accent); }
     .nq-button.primary { background: var(--nq-accent); color: var(--nq-bg); border-color: var(--nq-accent); font-weight: 700; }
     .nq-play-footer { display: flex; justify-content: flex-end; margin-top: 12px; }
+
+    @keyframes nq-pop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.3); }
+      100% { transform: scale(0); opacity: 0; }
+    }
+    @keyframes nq-shake {
+      0%, 100% { transform: translateX(0); }
+      25%      { transform: translateX(-4px); }
+      75%      { transform: translateX(4px); }
+    }
+    .nq-board.shake { animation: nq-shake 0.25s ease; }
+    .nq-flash {
+      position: absolute;
+      grid-column: var(--col);
+      grid-row: var(--row);
+      border-radius: 5px;
+      pointer-events: none;
+      animation: nq-pop 0.35s ease-out forwards;
+      z-index: 2;
+    }
+    .nq-flash.correct { background: rgba(125, 240, 169, 0.7); }
+    .nq-flash.wrong   { background: rgba(255, 99, 99, 0.7); }
   </style>
 </head>
 <body>
@@ -349,6 +372,17 @@
       board.innerHTML = html;
     }
 
+    function spawnFlash(row, col, kind) {
+      const board = document.getElementById('nq-board');
+      if (!board) return;
+      const el = document.createElement('div');
+      el.className = `nq-flash ${kind}`;
+      el.style.setProperty('--col', col + 1);
+      el.style.setProperty('--row', row + 1);
+      board.appendChild(el);
+      setTimeout(() => el.remove(), 400);
+    }
+
     function isOccupied(row, col, extras = []) {
       if (state.snake.some(s => s.row === row && s.col === col)) return true;
       if (state.pellets.some(p => p.row === row && p.col === col)) return true;
@@ -475,6 +509,16 @@
       const pelletIdx = state.pellets.findIndex(p => p.row === nr && p.col === nc);
       if (pelletIdx >= 0) {
         const pellet = state.pellets[pelletIdx];
+        spawnFlash(pellet.row, pellet.col, pellet.correct ? 'correct' : 'wrong');
+        if (!pellet.correct) {
+          const board = document.getElementById('nq-board');
+          if (board) {
+            board.classList.remove('shake');
+            // Force reflow so the animation can restart on consecutive wrongs.
+            void board.offsetWidth;
+            board.classList.add('shake');
+          }
+        }
         state.pellets.splice(pelletIdx, 1);
         state.snake.unshift({ row: nr, col: nc });
         if (pellet.correct) {
