@@ -124,6 +124,33 @@
       font-size: 13px;
       box-shadow: 0 0 8px rgba(255, 204, 85, 0.5);
     }
+
+    .nq-results-wrap { text-align: center; padding: 2rem 0; }
+    .nq-results-headline { font-size: 1rem; color: var(--nq-text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+    .nq-results-length { font-size: 4.5rem; font-weight: 700; line-height: 1; margin: 0.5rem 0; color: var(--nq-accent); }
+    .nq-results-substats { color: var(--nq-text-soft); margin-bottom: 0.5rem; }
+    .nq-results-new-best {
+      display: inline-block;
+      background: var(--nq-accent);
+      color: var(--nq-bg);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin: 0.5rem 0 1.5rem;
+    }
+    .nq-results-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 1.5rem; }
+    .nq-button {
+      background: var(--nq-bg-soft);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--nq-text);
+      font: inherit;
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .nq-button:hover { border-color: var(--nq-accent); }
+    .nq-button.primary { background: var(--nq-accent); color: var(--nq-bg); border-color: var(--nq-accent); font-weight: 700; }
   </style>
 </head>
 <body>
@@ -462,9 +489,39 @@
 
     function endRound(reason) {
       if (state.tickId) { clearInterval(state.tickId); state.tickId = null; }
-      // Placeholder — Results screen wiring lands in Task 18.
-      console.log('endRound', reason, 'length=' + state.snake.length, 'qCorrect=' + state.qCorrect);
-      showScreen('start');
+      const finalLength = state.snake.length;
+      const tier = state.tier;
+      const prevBest = state.bestByTier[tier] || 0;
+      const newBest = finalLength > prevBest;
+      if (newBest) {
+        state.bestByTier[tier] = finalLength;
+      }
+      renderResults({ finalLength, qCorrect: state.qCorrect, tier, newBest, reason });
+      showScreen('results');
+    }
+
+    function renderResults({ finalLength, qCorrect, tier, newBest, reason }) {
+      const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
+      const root = document.getElementById('nq-results');
+      root.innerHTML = `
+        <div class="nq-results-wrap">
+          <div class="nq-results-headline">Final length</div>
+          <div class="nq-results-length">${finalLength}</div>
+          <div class="nq-results-substats">
+            ${qCorrect} / 10 correct &middot; Tier: ${tierLabel}
+          </div>
+          ${newBest ? '<div class="nq-results-new-best">New best!</div>' : ''}
+          <div class="nq-results-buttons">
+            <button class="nq-button primary" id="nq-play-again">Play again</button>
+            <button class="nq-button" id="nq-back">Back</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('nq-play-again').addEventListener('click', () => startRound(tier));
+      document.getElementById('nq-back').addEventListener('click', () => {
+        renderStart();
+        showScreen('start');
+      });
     }
 
     window.addEventListener('keydown', handleKey);
