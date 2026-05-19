@@ -245,6 +245,13 @@
       } catch (_e) { /* corrupt storage — keep defaults */ }
     }
 
+    async function saveStats() {
+      await window.storage.set('nq-stats', JSON.stringify({
+        version: 1,
+        bestByTier: state.bestByTier,
+      }));
+    }
+
     function renderStart() {
       const tiers = [
         { id: 'easy',   title: 'Easy',   meta: 'Addition & subtraction' },
@@ -495,6 +502,7 @@
       const newBest = finalLength > prevBest;
       if (newBest) {
         state.bestByTier[tier] = finalLength;
+        saveStats();
       }
       renderResults({ finalLength, qCorrect: state.qCorrect, tier, newBest, reason });
       showScreen('results');
@@ -522,6 +530,7 @@
         renderStart();
         showScreen('start');
       });
+      renderStart();
     }
 
     window.addEventListener('keydown', handleKey);
