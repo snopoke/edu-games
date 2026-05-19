@@ -114,6 +114,16 @@
       box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);
     }
     .nq-snake-seg.head { background: var(--nq-snake-head); }
+    .nq-pellet {
+      background: var(--nq-pellet);
+      color: var(--nq-pellet-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      box-shadow: 0 0 8px rgba(255, 204, 85, 0.5);
+    }
   </style>
 </head>
 <body>
@@ -254,6 +264,8 @@
         { row: midRow, col: midCol - 1 },
         { row: midRow, col: midCol - 2 },
       ];
+      state.question = generateQuestion(tier);
+      spawnPellets();
       renderPlay();
       renderBoard();
       showScreen('play');
@@ -296,6 +308,48 @@
         html += `<div class="nq-pellet" style="--col:${p.col + 1};--row:${p.row + 1}">${p.value}</div>`;
       });
       board.innerHTML = html;
+    }
+
+    function isOccupied(row, col, extras = []) {
+      if (state.snake.some(s => s.row === row && s.col === col)) return true;
+      if (state.pellets.some(p => p.row === row && p.col === col)) return true;
+      if (extras.some(e => e.row === row && e.col === col)) return true;
+      return false;
+    }
+
+    function pickFreeCell(extras) {
+      // Up to 200 attempts then bail (board is small, snake is small — fine in practice).
+      for (let i = 0; i < 200; i++) {
+        const row = randInt(0, ROWS - 1);
+        const col = randInt(0, COLS - 1);
+        if (!isOccupied(row, col, extras)) return { row, col };
+      }
+      return null;
+    }
+
+    function spawnPellets() {
+      state.pellets = [];
+      const tierCfg = TIERS[state.tier];
+      const distractors = generateDistractors(state.question.answer, tierCfg.distractors);
+      const values = [
+        { value: state.question.answer, correct: true },
+        ...distractors.map(v => ({ value: v, correct: false })),
+      ];
+      shuffle(values);
+      const placed = [];
+      for (const v of values) {
+        const cell = pickFreeCell(placed);
+        if (!cell) break;
+        placed.push({ ...cell, ...v });
+      }
+      state.pellets = placed;
+    }
+
+    function nextQuestion() {
+      state.question = generateQuestion(state.tier);
+      spawnPellets();
+      renderBoard();
+      renderHud();
     }
 
     const state = {
