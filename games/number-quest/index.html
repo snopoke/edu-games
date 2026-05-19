@@ -56,6 +56,27 @@
   <script>
     'use strict';
 
+    const COLS = 20;
+    const ROWS = 15;
+
+    const TIERS = {
+      easy:   { distractors: 2, tickMs: 220, wrap: true,  selfKills: false, math: 'addsub'  },
+      medium: { distractors: 3, tickMs: 170, wrap: false, selfKills: false, math: 'mult'    },
+      hard:   { distractors: 4, tickMs: 130, wrap: false, selfKills: true,  math: 'multdiv' },
+    };
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
     const state = {
       screen: 'start',
       tier: null,
@@ -109,6 +130,21 @@
     function assertEq(a, b, msg) {
       if (a !== b) throw new Error((msg || 'assertEq') + ` — expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
     }
+
+    test('randInt is inclusive on both ends', () => {
+      const seen = new Set();
+      for (let i = 0; i < 1000; i++) seen.add(randInt(3, 5));
+      assert(seen.has(3) && seen.has(4) && seen.has(5), 'range 3..5 should be covered');
+      for (const v of seen) assert(v >= 3 && v <= 5, 'out of range: ' + v);
+    });
+
+    test('shuffle preserves elements', () => {
+      const before = [1, 2, 3, 4, 5];
+      const after = shuffle([...before]);
+      assertEq(after.length, before.length);
+      const sorted = [...after].sort((a, b) => a - b);
+      assertEq(sorted.join(','), '1,2,3,4,5');
+    });
 
     test('harness is alive', () => { assertEq(1 + 1, 2); });
 
