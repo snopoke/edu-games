@@ -428,6 +428,28 @@
         }
       }
 
+      const pelletIdx = state.pellets.findIndex(p => p.row === nr && p.col === nc);
+      if (pelletIdx >= 0) {
+        const pellet = state.pellets[pelletIdx];
+        state.pellets.splice(pelletIdx, 1);
+        state.snake.unshift({ row: nr, col: nc });
+        if (pellet.correct) {
+          state.qCorrect++;
+          if (state.qCorrect >= 10) {
+            renderBoard();
+            renderHud();
+            endRound('done');
+            return;
+          }
+          nextQuestion();
+        } else {
+          // Wrong eat handled in Task 17.
+        }
+        renderBoard();
+        renderHud();
+        return;
+      }
+
       state.snake.unshift({ row: nr, col: nc });
       state.snake.pop();
       renderBoard();
