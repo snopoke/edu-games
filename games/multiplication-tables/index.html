@@ -172,7 +172,7 @@
 
   const state = {
     screen: 'settings',
-    mode: 'classic',
+    mode: 'play10',
     theme: 'classic',
     timePerQuestion: 10,
     tables: new Set([2,3,4,5,6,7,8,9,10,11,12]),
@@ -186,8 +186,7 @@
     soundOn: true,
     achievements: new Set(),
     totalAnswered: 0,
-    bestClassic: {},
-    bestSurvival: 0,
+    bestByMode: { play10: 0, play20: 0 },
     a: 0, b: 0, correctAnswer: 0,
     isBoss: false, isInverted: false, inversionTarget: null,
     answer: '',
@@ -195,6 +194,7 @@
     timerId: null, advanceId: null,
     tickPlayed: false,
     lastAnswerTime: 0,
+    questionStartedAt: 0,
     lastBossWin: false,
     lastEncourage: '',
   };
@@ -204,10 +204,10 @@
     'streak-3':      { name: 'Three in a row',   icon: 'ti-flame' },
     'streak-5':      { name: 'Five in a row',    icon: 'ti-flame' },
     'streak-10':     { name: 'On fire!',         icon: 'ti-rocket' },
+    'streak-15':     { name: 'Unstoppable',      icon: 'ti-bolt' },
     'perfect':       { name: 'Perfect round',    icon: 'ti-medal' },
     'boss-defeated': { name: 'Boss defeated',    icon: 'ti-target-arrow' },
-    'survival-10':   { name: 'Survivor',         icon: 'ti-shield' },
-    'survival-20':   { name: 'Survival pro',     icon: 'ti-shield-check' },
+    'marathon':      { name: 'Marathon',         icon: 'ti-infinity' },
     'century':       { name: '100 answered',     icon: 'ti-trophy' },
     'speedy':        { name: 'Lightning fast',   icon: 'ti-bolt' },
   };
@@ -230,14 +230,30 @@
 
   // ===== Storage =====
   async function loadAll() {
+    let migratedShape = false;
     try {
       const r = await window.storage.get('mt-stats', false);
       if (r && r.value) {
         const d = JSON.parse(r.value);
-        state.achievements = new Set(d.achievements || []);
+        // achievements: drop now-unreachable survival IDs
+        const acc = Array.isArray(d.achievements) ? d.achievements : [];
+        const cleanedAcc = acc.filter(id => id !== 'survival-10' && id !== 'survival-20');
+        if (cleanedAcc.length !== acc.length) migratedShape = true;
+        state.achievements = new Set(cleanedAcc);
+
         state.totalAnswered = d.totalAnswered || 0;
-        state.bestClassic = d.bestClassic || {};
-        state.bestSurvival = d.bestSurvival || 0;
+
+        // best scores: migrate bestClassic + drop bestSurvival
+        const byMode = (d.bestByMode && typeof d.bestByMode === 'object') ? { ...d.bestByMode } : { play10: 0, play20: 0 };
+        if (d.bestClassic && typeof d.bestClassic === 'object') {
+          if (d.bestClassic['10']) byMode.play10 = Math.max(byMode.play10 || 0, d.bestClassic['10']);
+          if (d.bestClassic['20']) byMode.play20 = Math.max(byMode.play20 || 0, d.bestClassic['20']);
+          migratedShape = true;
+        }
+        if (typeof d.bestSurvival === 'number') {
+          migratedShape = true;  // we keep it out of the new shape entirely
+        }
+        state.bestByMode = byMode;
       }
     } catch (e) {}
     try {
@@ -248,14 +264,18 @@
         if (d.theme && THEMES[d.theme]) state.theme = d.theme;
       }
     } catch (e) {}
+
+    // Write back once if we found old shape, so the file is now in the new shape.
+    if (migratedShape) {
+      await saveStats();
+    }
   }
   async function saveStats() {
     try {
       await window.storage.set('mt-stats', JSON.stringify({
         achievements: Array.from(state.achievements),
         totalAnswered: state.totalAnswered,
-        bestClassic: state.bestClassic,
-        bestSurvival: state.bestSurvival,
+        bestByMode: state.bestByMode,
       }), false);
     } catch (e) {}
   }
@@ -303,14 +323,6 @@
     return 1;
   }
   function getBase() { return state.isBoss ? 25 : 10; }
-  function getQuestionTime() {
-    if (state.mode === 'survival') {
-      const start = state.timePerQuestion;
-      const min = Math.max(2.5, start * 0.3);
-      return Math.max(min, start - state.currentQuestion * 0.4);
-    }
-    return state.timePerQuestion;
-  }
   function pickEncourage() {
     const arr = theme().encourage;
     let pick = arr[Math.floor(Math.random() * arr.length)];
