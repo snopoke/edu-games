@@ -411,6 +411,23 @@
         }
       }
 
+      if (TIERS[state.tier].selfKills) {
+        // Self-collision: check head's next cell against any body segment except
+        // the current tail (which is about to vacate). This avoids a false
+        // positive when the snake's head moves into the cell its tail leaves.
+        const willMoveOntoTail =
+          state.pellets.every(p => !(p.row === nr && p.col === nc)) &&
+          state.snake[state.snake.length - 1].row === nr &&
+          state.snake[state.snake.length - 1].col === nc;
+        const hitsSelf = state.snake.some((seg, i) =>
+          i < state.snake.length - 1 && seg.row === nr && seg.col === nc
+        );
+        if (hitsSelf && !willMoveOntoTail) {
+          endRound('self');
+          return;
+        }
+      }
+
       state.snake.unshift({ row: nr, col: nc });
       state.snake.pop();
       renderBoard();
