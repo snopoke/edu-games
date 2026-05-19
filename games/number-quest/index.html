@@ -44,6 +44,28 @@
     }
     .nq-back:hover { color: var(--nq-text); background: rgba(255,255,255,0.06); }
     .nq-screen[hidden] { display: none; }
+    .nq-hero { text-align: center; padding: 1rem 0 2rem; }
+    .nq-hero h1 { font-size: 2.5rem; margin: 0; }
+    .nq-hero p { color: var(--nq-text-soft); margin: 0.5rem 0 0; }
+    .nq-tier-list { display: grid; gap: 12px; max-width: 480px; margin: 0 auto; }
+    .nq-tier {
+      background: var(--nq-bg-soft);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      color: var(--nq-text);
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .nq-tier:hover { border-color: var(--nq-accent); }
+    .nq-tier h2 { margin: 0; font-size: 1.1rem; }
+    .nq-tier-meta { color: var(--nq-text-soft); font-size: 0.85rem; }
+    .nq-tier-best { font-size: 0.9rem; color: var(--nq-accent); }
   </style>
 </head>
 <body>
@@ -123,6 +145,55 @@
       return shuffle([...pool]).slice(0, count);
     }
 
+    async function loadStats() {
+      try {
+        const r = await window.storage.get('nq-stats');
+        if (!r || !r.value) return;
+        const data = JSON.parse(r.value);
+        if (data && data.bestByTier) {
+          state.bestByTier = {
+            easy: Number(data.bestByTier.easy) || 0,
+            medium: Number(data.bestByTier.medium) || 0,
+            hard: Number(data.bestByTier.hard) || 0,
+          };
+        }
+      } catch (_e) { /* corrupt storage — keep defaults */ }
+    }
+
+    function renderStart() {
+      const tiers = [
+        { id: 'easy',   title: 'Easy',   meta: 'Addition & subtraction' },
+        { id: 'medium', title: 'Medium', meta: 'Multiplication tables' },
+        { id: 'hard',   title: 'Hard',   meta: 'Multiplication & division' },
+      ];
+      const root = document.getElementById('nq-start');
+      root.innerHTML = `
+        <div class="nq-hero">
+          <h1>Number Quest</h1>
+          <p>Steer the snake. Eat the right answer. Grow.</p>
+        </div>
+        <div class="nq-tier-list">
+          ${tiers.map(t => `
+            <button class="nq-tier" data-tier="${t.id}">
+              <span>
+                <h2>${t.title}</h2>
+                <div class="nq-tier-meta">${t.meta}</div>
+              </span>
+              <span class="nq-tier-best">Best: ${state.bestByTier[t.id] || '—'}</span>
+            </button>
+          `).join('')}
+        </div>
+      `;
+      for (const btn of root.querySelectorAll('.nq-tier')) {
+        btn.addEventListener('click', () => startRound(btn.dataset.tier));
+      }
+    }
+
+    function startRound(tier) {
+      // Placeholder — implemented in a later task.
+      console.log('startRound', tier);
+    }
+
     const state = {
       screen: 'start',
       tier: null,
@@ -144,7 +215,9 @@
       }
     }
 
-    function init() {
+    async function init() {
+      await loadStats();
+      renderStart();
       showScreen('start');
     }
 
